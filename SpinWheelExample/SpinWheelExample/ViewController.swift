@@ -10,6 +10,9 @@ import UIKit
 import SpinWheelControl
 
 class ViewController: UIViewController, SpinWheelControlDataSource, SpinWheelControlDelegate {
+    
+    var centerButton: UIButton!
+    
     let colorPalette: [UIColor] = [UIColor.blue, UIColor.brown, UIColor.cyan, UIColor.darkGray, UIColor.green, UIColor.magenta, UIColor.red, UIColor.orange, UIColor.black, UIColor.gray, UIColor.lightGray, UIColor.purple, UIColor.yellow, UIColor.white]
 
     
@@ -22,7 +25,6 @@ class ViewController: UIViewController, SpinWheelControlDataSource, SpinWheelCon
         return wedge
     }
 
-    
     var spinWheelControl:SpinWheelControl!
     
     override func viewDidLoad() {
@@ -37,7 +39,31 @@ class ViewController: UIViewController, SpinWheelControlDataSource, SpinWheelCon
         
         spinWheelControl.delegate = self
         
+        centerButton = UIButton(frame: CGRect(x: 0, y: 0, width: 80, height: 80))
+        centerButton.backgroundColor = .groupTableViewBackground
+        centerButton.center = spinWheelControl.center
+        centerButton.setTitleColor(.black, for: .normal)
+        
+        centerButton.layer.cornerRadius = 40
+        
+        centerButton.addTarget(self, action:#selector(startSpinning), for: .touchUpInside)
+        
         self.view.addSubview(spinWheelControl)
+        spinWheelControl.addSubview(centerButton)
+    }
+    
+    func startSpinning() {
+        
+        centerButton.isEnabled = false
+        
+        let _ = spinWheelControl.startSpinning()
+        
+        for i in 1..<10 {
+            let tempRad = 0.1*CGFloat(i)
+            let _ = spinWheelControl.continueTr(tempRad)
+        }
+        
+        spinWheelControl.endTra()
     }
     
     

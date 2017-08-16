@@ -76,13 +76,11 @@ open class SpinWheelControl: UIControl {
         }
     }
     
-    
     @IBInspectable var snapOrientation: CGFloat = SpinWheelDirection.up.degreesValue {
         didSet {
             snappingPositionRadians = snapOrientation.toRadians
         }
     }
-    
     
     weak public var dataSource: SpinWheelControlDataSource?
     public var delegate: SpinWheelControlDelegate?
@@ -171,8 +169,11 @@ open class SpinWheelControl: UIControl {
         else if computedVelocity < -SpinWheelControl.kMaxVelocity {
             computedVelocity = -SpinWheelControl.kMaxVelocity
         }
+        return Velocity((-22 ... -14).random)
+    }
+    
+    public func rotate() {
         
-        return computedVelocity
     }
     
     
@@ -254,6 +255,53 @@ open class SpinWheelControl: UIControl {
         self.addSubview(self.spinWheelView)
     }
     
+    public func startSpinning() -> Bool {
+        switch currentStatus {
+        case SpinWheelStatus.idle:
+            currentlyDetectingTap = true
+        case SpinWheelStatus.decelerating:
+            endDeceleration()
+            endSnap()
+        case SpinWheelStatus.snapping:
+            endSnap()
+        }
+        
+        let touchPoint: CGPoint = CGPoint(x: 57, y: 187)//touch.location(in: self)
+        
+        if distanceFromCenter(point: touchPoint) < SpinWheelControl.kMinDistanceFromCenter {
+            return false
+        }
+        
+        startTrackingTime = CACurrentMediaTime()
+        endTrackingTime = startTrackingTime
+        
+        startTouchRadians = 2.539//radiansForTouch(touch: touch)
+        currentTouchRadians = startTouchRadians
+        previousTouchRadians = startTouchRadians
+        
+        return true
+    }
+    
+    public func continueTr(_ rad: CGFloat) -> Bool {
+        currentlyDetectingTap = false
+        
+        startTrackingTime = endTrackingTime
+        endTrackingTime = CACurrentMediaTime()
+        
+        previousTouchRadians = currentTouchRadians
+        currentTouchRadians = rad
+        let touchRadiansDifference: Radians = currentTouchRadians - previousTouchRadians
+        
+        self.spinWheelView.transform = self.spinWheelView.transform.rotated(by: touchRadiansDifference)
+        
+        delegate?.spinWheelDidRotateByRadians?(radians: touchRadiansDifference)
+        
+        return true
+    }
+    
+    public func endTra() {
+        beginDeceleration()
+    }
     
     //When the SpinWheelControl ends rotation, trigger the UIControl's valueChanged to reflect the newly selected value.
     func didEndRotationOnWedgeAtIndex(index: UInt) {
@@ -285,12 +333,14 @@ open class SpinWheelControl: UIControl {
         endTrackingTime = startTrackingTime
         
         startTouchRadians = radiansForTouch(touch: touch)
+        
+        print(startTouchRadians)
+        
         currentTouchRadians = startTouchRadians
         previousTouchRadians = startTouchRadians
         
         return true
     }
-    
     
     //User is in the middle of dragging the UIControl
     override open func continueTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
@@ -312,11 +362,12 @@ open class SpinWheelControl: UIControl {
         
         self.spinWheelView.transform = self.spinWheelView.transform.rotated(by: touchRadiansDifference)
         
+        //        print(touchRadiansDifference)
+        
         delegate?.spinWheelDidRotateByRadians?(radians: touchRadiansDifference)
         
         return true
     }
-    
     
     //User ended touching/dragging the UIControl
     override open func endTracking(_ touch: UITouch?, with event: UIEvent?) {
@@ -469,5 +520,22 @@ open class SpinWheelControl: UIControl {
     public func reloadData() {
         clear()
         drawWheel()
+    }
+}
+
+extension CountableRange where Bound: Strideable, Bound == Int {
+    var random: Int {
+        return lowerBound + Int(arc4random_uniform(UInt32(count)))
+    }
+    func random(_ n: Int) -> [Int] {
+        return (0..<n).map { _ in random }
+    }
+}
+extension CountableClosedRange where Bound: Strideable, Bound == Int {
+    var random: Int {
+        return lowerBound + Int(arc4random_uniform(UInt32(count)))
+    }
+    func random(_ n: Int) -> [Int] {
+        return (0..<n).map { _ in random }
     }
 }
